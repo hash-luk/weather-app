@@ -21,7 +21,8 @@ module.exports = {
     },
     width: {
       '300': '32rem',
-      '500': '18rem'
+      '500': '18rem',
+      '150':  '9.37rem'
     }
   },
   plugins: [],

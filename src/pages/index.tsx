@@ -1,58 +1,57 @@
 import getCoords from "@/libs/getCoords";
 import getWeather from "@/libs/getWeather";
 import { Inter } from "next/font/google";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Result from "./result";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home() {
-  const [city, setCity] = useState("");
-  let cityCoords = [] as Array<Object>;
+  const [isLoading, setIsLoading] = useState(true);
+  const effectRan = useRef(false);
+  const [city, setCity] = useState("Brazil");
+  const [weatherData, setWeatherData] = useState({});
 
-  let lat = 0
-  let lon = 0
-
-  async function getCurrentWeater() {
-    await getWeather
-      .get("", {
-        params: {
-          lat: lat,
-          lon: lon,
-          appid: process.env.WEATHER_API_KEY,
-          lang: "pt_br",
-          units: "metric"
-        },
-      })
-      .then((res) => console.log(res.data));
-  }
-
-  async function getCoordsByCityName(event: FormEvent) {
+  async function getCurrentWeater(event : FormEvent) {
     event.preventDefault();
 
-    const inputCity = document.getElementById("input-city") as HTMLInputElement;
-
-    console.log(city);
-
-    if (!city || city === "") {
-      inputCity.style.border = "1px solid red";
+    if(!city) {
+      alert("Preencha os campos")
     } else {
-      console.log(city);
-      await getCoords
-        .get("", {
-          params: {
-            q: city,
-            appid: process.env.WEATHER_API_KEY,
-          },
-        })
-        .then((res) => {
-          // console.log(res.data[0]);
-          cityCoords = res.data[0];
-          console.log(cityCoords);
-          lat = cityCoords.lat;
-          lon = cityCoords.lon;
-        });
+      await getWeather
+      .get("", {
+        params: {
+          q:city,
+          appid: process.env.WEATHER_API_KEY,
+          lang: "pt_br",
+          units: "metric",
+        },
+      })
+      .then((res) => setWeatherData(res.data));
     }
-    getCurrentWeater();
+  }
+
+  useEffect(() => {
+    if(effectRan.current === false) {
+      getWeather
+      .get("", {
+        params: {
+          q:city,
+          appid: process.env.WEATHER_API_KEY,
+          lang: "pt_br",
+          units: "metric",
+        },
+      })
+      .then((res) => {
+        setWeatherData(res.data);
+        setIsLoading(false)
+      });
+    }
+    effectRan.current = true;
+  })
+
+  if(isLoading) {
+    return <div className="App">Loading...</div>
   }
 
   return (
@@ -61,23 +60,27 @@ export default function Home() {
         <h1 className="flex justify-center text-lg">CLIMA TEMPO</h1>
         <form id="city-get" method="get">
           <div className="flex flex-col items-start gap-2 min-w-full">
-            <label htmlFor="city">Cidade</label>
+            <label htmlFor="city">Local</label>
             <input
               name="city"
               type="text"
               className="min-w-full text-sm p-1 border rounded"
               id="input-city"
+              placeholder="Insira o local"
+              required
               onChange={(e) => setCity(e.currentTarget.value)}
             />
           </div>
         </form>
-        <div className="w-full h-auto"></div>
+
+        <Result data={weatherData}/>
+
         <input
           type="submit"
           form="city-get"
           value="Pesquisar"
           className="min-w-full bg-turquese h-fit rounded text-white-text hover:opacity-75 cursor-pointer p-2 uppercase font-bold"
-          onClick={getCoordsByCityName}
+          onClick={getCurrentWeater}
         />
       </div>
     </div>
